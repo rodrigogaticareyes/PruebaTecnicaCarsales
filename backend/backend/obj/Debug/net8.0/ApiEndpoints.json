@@ -1,0 +1,34 @@
+[
+  {
+    "ContainingType": "backend.Controller.BaseController",
+    "Method": "GetEpisode",
+    "RelativePath": "api/Base/episode",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "page",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "backend.Controllers.EpisodeController",
+    "Method": "GetCharactersByEpisode",
+    "RelativePath": "api/Episode/{id}/characters",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  }
+]

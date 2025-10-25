@@ -1,0 +1,236 @@
+<div class="episode-container">
+  <h1>Episodios</h1>
+  
+  <!-- Search Filter -->
+  <div class="search-container">
+    <div class="search-box">
+      <input 
+        type="text" 
+        placeholder="Buscar episodio por nombre..." 
+        [(ngModel)]="searchTerm"
+        (input)="onSearchChange($event.target.value)"
+        class="search-input"
+      />
+      <button 
+        *ngIf="hasActiveFilter()" 
+        (click)="clearSearch()" 
+        class="clear-btn"
+        title="Limpiar búsqueda"
+      >
+        ✕
+      </button>
+    </div>
+    @if (hasActiveFilter()) {
+      <div class="search-results">
+        <span class="results-count">
+          {{ getFilteredCount() }} de {{ episodes.length }} episodios encontrados
+        </span>
+      </div>
+    }
+  </div>
+  
+  @if (loading) {
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Cargando episodios...</p>
+    </div>
+  }
+
+  @if (error) {
+    <div class="error">
+      <p>{{ error }}</p>
+      <button (click)="loadEpisodes(currentPage)" class="retry-btn">Reintentar</button>
+    </div>
+  }
+
+  @if (!loading && !error && episodes.length > 0) {
+    @if (filteredEpisodes.length > 0) {
+        <table class="episode-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Episodio</th>
+              <th>Fecha de emisión</th>          
+              <th>Personajes</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (episode of filteredEpisodes; track episode.id) {
+            <tr>
+              <td>{{ episode.id }}</td>
+              <td>{{ episode.name }}</td>          
+              <td>{{ episode.episode }}</td>
+              <td>{{ formatDate(episode.air_date) }}</td>
+              <span
+                class="characters-link"
+                (click)="viewEpisodeCharacters(episode.id)"
+                title="Ver personajes del episodio">
+                {{ episode.characters.length || 0 }}
+              </span>
+            </tr>              
+            }
+          </tbody>
+        </table>
+    } @else {
+      <div class="no-results">
+        <div class="no-results-icon">🔍</div>
+        <h3>No se encontraron episodios</h3>
+        <p>No hay episodios que coincidan con "{{ searchTerm }}"</p>
+        <button (click)="clearSearch()" class="clear-search-btn">
+          Limpiar búsqueda
+        </button>
+      </div>
+    }
+
+    <div class="pagination-controls">
+      <button 
+        (click)="previousPage()" 
+        [disabled]="currentPage === 1"
+        class="pagination-btn">
+        ← Anterior
+      </button>
+      
+      <div class="page-numbers">
+        @for (page of getPageNumbers(); track page) {
+          <button 
+            (click)="goToPage(page)"
+            [class.active]="page === currentPage"
+            class="page-btn">
+            {{ page }}
+          </button>
+        }
+      </div>
+      
+      <button 
+        (click)="nextPage()" 
+        [disabled]="currentPage === totalPages"
+        class="pagination-btn">
+        Siguiente →
+      </button>
+    </div>
+  }
+
+  @if (!loading && !error && episodes.length === 0) {
+    <div class="no-data">
+      <p>No se encontraron episodios.</p>
+      <button (click)="loadEpisodes(1)" class="retry-btn">Recargar</button>
+    </div>
+  }
+
+
+  @if (showModal) {
+    <div class="modal-overlay" (click)="closeModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>Personajes de: {{ selectedEpisodeName }}</h2>
+          <button class="modal-close-btn" (click)="closeModal()" title="Cerrar modal">
+            ✕
+          </button>
+        </div>
+
+        <div class="modal-body">
+          @if (modalLoading) {
+            <div class="modal-loading">
+              <div class="spinner"></div>
+              <p>Cargando personajes...</p>
+            </div>
+          }
+
+          @if (modalError) {
+            <div class="modal-error">
+              <p>{{ modalError }}</p>
+              <button (click)="retryLoadCharacters()" class="retry-btn">Reintentar</button>
+            </div>
+          }
+
+          @if (!modalLoading && !modalError && characters.length > 0) {
+            <!-- Character Search -->
+            <div class="character-search-container">
+              <div class="character-search-box">
+                <input 
+                  type="text" 
+                  placeholder="Buscar personaje por nombre, especie, estado..." 
+                  [(ngModel)]="characterSearchTerm"
+                  (input)="onCharacterSearchChange($event.target.value)"
+                  class="character-search-input"
+                />
+                <button 
+                  *ngIf="hasCharacterSearchActive()" 
+                  (click)="clearCharacterSearch()" 
+                  class="character-clear-btn"
+                  title="Limpiar búsqueda"
+                >
+                  ✕
+                </button>
+              </div>
+              @if (hasCharacterSearchActive()) {
+                <div class="character-search-results">
+                  <span class="character-results-count">
+                    {{ getFilteredCharactersCount() }} de {{ characters.length }} personajes encontrados
+                  </span>
+                </div>
+              }
+            </div>
+            @if (filteredCharacters.length > 0) {
+
+              <table class="episode-table">
+                <thead>
+                  <tr>
+                    <th>Personaje</th>
+                    <th>Estado</th>
+                    <th>Especie</th>
+                    <th>Género</th>          
+                    <th>Origen</th>
+                    <th>Ubicación</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (character of filteredCharacters; track character.id) {
+                  <tr>
+                    <td>{{ character.name || 'Sin nombre' }}</td>
+                    <td>                        
+                        @if (character.status) {
+                          <span class="status-badge" [class]="'status-' + character.status.toLowerCase()">
+                            {{ character.status }}
+                          </span>
+                        } @else {
+                          <span class="status-badge status-unknown">Sin estado</span>
+                        }
+                    </td>          
+                    <td>{{ character.species || 'No especificada' }}</td>
+                    <td>{{ character.gender || 'No especificado' }}</td>
+                    <td>{{ character.origin.name || 'Desconocido' }}</td>
+                    <td>{{ character.location.name || 'Desconocida' }}</td>
+                  </tr>              
+                  }
+                </tbody>
+              </table>
+            } @else {
+              <div class="character-no-results">
+                <div class="character-no-results-icon">🔍</div>
+                <h3>No se encontraron personajes</h3>
+                <p>No hay personajes que coincidan con "{{ characterSearchTerm }}"</p>
+                <button (click)="clearCharacterSearch()" class="character-clear-search-btn">
+                  Limpiar búsqueda
+                </button>
+              </div>
+            }
+          }
+
+          @if (!modalLoading && !modalError && characters.length === 0) {
+            <div class="modal-no-data">
+              <p>No se encontraron personajes para este episodio.</p>
+            </div>
+          }
+        </div>
+
+        <div class="modal-footer">
+          <button (click)="closeModal()" class="modal-close-button">
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>
